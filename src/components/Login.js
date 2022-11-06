@@ -1,15 +1,18 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const handleSignUp = () => {
-    console.log("clicked");
+  const [users, setUsers] = useState([]);
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const email = event.target.email.value;
+    const password = event.target.password.value;
+    console.log(email, password);
     const user = {
-      name: "mahmud",
-      email: "mahmud3503@gmail.com",
-      message: "something",
+      email,
+      password,
     };
-    fetch("http://localhost:5000/login", {
+    fetch(`http://localhost:5000/users`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -18,11 +21,36 @@ const Login = () => {
     })
       .then((res) => res.json())
       .then((data) => {
-        localStorage.setItem("access-token", data.token);
-        if (data.token) {
+        console.log(data);
+        if (data.acknowledged) {
+          fetch("http://localhost:5000/users")
+            .then((res) => res.json())
+            .then((data) => setUsers(data));
         }
       });
   };
+
+  const handleDelete = (id) => {
+    console.log(id);
+    fetch(`http://localhost:5000/users/${id}`, {
+      method: "DELETE",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        if (data.deletedCount > 0) {
+          const remaining = users.filter((user) => user._id !== id);
+          setUsers(remaining);
+        }
+      });
+  };
+
+  useEffect(() => {
+    fetch("http://localhost:5000/users")
+      .then((res) => res.json())
+      .then((data) => setUsers(data));
+  }, []);
+
   return (
     <div>
       <div className="flex flex-col max-w-md p-6 mx-auto rounded-md sm:p-10 dark:bg-gray-900 dark:text-gray-100">
@@ -33,6 +61,7 @@ const Login = () => {
           </p>
         </div>
         <form
+          onSubmit={handleSubmit}
           novalidate=""
           action=""
           className="space-y-12 ng-untouched ng-pristine ng-valid"
@@ -75,8 +104,7 @@ const Login = () => {
           <div className="space-y-2">
             <div>
               <button
-                onClick={handleSignUp}
-                type="button"
+                type="submit"
                 className="w-full px-8 py-3 font-semibold rounded-md dark:bg-violet-400 dark:text-gray-900"
               >
                 Sign in
@@ -95,6 +123,17 @@ const Login = () => {
             </p>
           </div>
         </form>
+      </div>
+      <div>
+        {users.map((user) => (
+          <h2>
+            {user.email}{" "}
+            <button onClick={() => handleDelete(user._id)}>X</button>
+            <Link to={`/update/${user._id}`}>
+              <button>update</button>
+            </Link>
+          </h2>
+        ))}
       </div>
     </div>
   );
